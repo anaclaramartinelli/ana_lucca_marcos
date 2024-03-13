@@ -80,12 +80,23 @@ score1 = 0
 score2 = 0
 tempo_gary = 0
 
-class Player(pygame.sprite.Sprite):
-    def __init__(self, imagens, keys):
+class ElementoJogo(pygame.sprite.Sprite):
+    def __init__(self, imgagens):
         # Construtor da classe mãe (Sprite).
         pygame.sprite.Sprite.__init__(self)
+        self.image = imgagens
+        self.rect = pygame.Rect(0, 0, 0, 0)  # Definido apenas para evitar erros, deve ser sobrescrito nas subclasses
+        self.speedx = 0
+        self.speedy = 0
 
-        self.image = imagens
+    def update(self):
+        # Atualização genérica, deve ser sobrescrita nas subclasses
+        pass
+
+class Player(ElementoJogo):
+    def __init__(self, imagens, keys):
+        # Construtor da classe mãe (ElementoJogo).
+        ElementoJogo.__init__(self, imagens)
         self.rect = self.image.get_rect()
         self.rect.centerx = WIDTH / 2
         self.rect.bottom = HEIGHT - 10
@@ -127,12 +138,10 @@ class Player(pygame.sprite.Sprite):
         if self.rect.top < 0:
             self.rect.top = 0
 
-class AGUA_VIVA(pygame.sprite.Sprite):
+class AGUA_VIVA(ElementoJogo):
     def __init__(self, imgagens):
-        # Construtor da classe mãe (Sprite).
-        pygame.sprite.Sprite.__init__(self)
-
-        self.image = imgagens
+        # Construtor da classe mãe (ElementoJogo).
+        ElementoJogo.__init__(self, imgagens)
         self.rect = pygame.Rect(0, 0, largura_agua_viva, altura_agua_viva)
         self.rect.x = random.randint(-100,-50)
         self.rect.bottom = random.randint(0, HEIGHT-100)
@@ -152,12 +161,10 @@ class AGUA_VIVA(pygame.sprite.Sprite):
             self.speedx = random.randint(2, 6)
             self.speedy = 0
 
-class GARY(pygame.sprite.Sprite):
+class GARY(ElementoJogo):
     def __init__(self, imgagens):
-        # Construtor da classe mãe (Sprite).
-        pygame.sprite.Sprite.__init__(self)
-
-        self.image = imgagens
+        # Construtor da classe mãe (ElementoJogo).
+        ElementoJogo.__init__(self, imgagens)
         self.rect = pygame.Rect(0, 0, largura_agua_viva, altura_agua_viva)
         self.rect.x = random.randint(-100,-50)
         self.rect.bottom = random.randint(0, HEIGHT-100)
@@ -177,12 +184,10 @@ class GARY(pygame.sprite.Sprite):
             self.speedx = 6
             self.speedy = 0
 
-class HOLANDES(pygame.sprite.Sprite):
+class HOLANDES(ElementoJogo):
     def __init__(self, imgagens):
-        # Construtor da classe mãe (Sprite).
-        pygame.sprite.Sprite.__init__(self)
-
-        self.image = imgagens
+        # Construtor da classe mãe (ElementoJogo).
+        ElementoJogo.__init__(self, imgagens)
         self.rect = pygame.Rect(0, 0, 110, 65)
         self.rect.x = random.randint(-100,-50)
         self.rect.bottom = random.randint(0, HEIGHT-100)
@@ -207,22 +212,36 @@ class HOLANDES(pygame.sprite.Sprite):
             else:
                 self.speedx = random.randint(6, 8)
 
-def tela_tutorial(BOTAOCLICADO):
+def renderizar_tela_tutorial():
+    window.blit(Tela_tutorial, (0, 0))
+
+def exibir_texto_enter():
+    enter_text = fonte.render("aperte enter para jogar", True, (PRETO))
+    window.blit(enter_text, (125, 550))
+
+def aguardar_enter():
+    for evento in pygame.event.get():
+        if evento.type == pygame.QUIT:
+            return False
+        elif evento.type == pygame.KEYDOWN:
+            if evento.key == pygame.K_RETURN:
+                return True
+    return None
+
+def tela_tutorial():
     BOTAOCLICADO = False
     executando1 = True
-    enter_text = fonte.render("aperte enter para jogar", True, (PRETO))
+    
     while executando1:
-        window.blit(Tela_tutorial,(0,0))
-        window.blit(enter_text,(125,550))
-        for evento in pygame.event.get():
-            if evento.type == pygame.QUIT:
-                executando1 = False
-            elif evento.type == pygame.KEYDOWN:
-                if evento.key == pygame.K_RETURN:
-                    BOTAOCLICADO = True
-                    return BOTAOCLICADO
-        pygame.display.update()
+        renderizar_tela_tutorial()
+        exibir_texto_enter()
         
+        enter_press = aguardar_enter()
+        if enter_press is not None:
+            BOTAOCLICADO = enter_press
+            return BOTAOCLICADO
+
+        pygame.display.update()
 
 
 # ----- Criação de objetos
@@ -301,7 +320,7 @@ while executando:
                     player_name = ""
                 if nomes_colocados == 2:
                     nomes_colocados = 0
-                    botao_clicado = tela_tutorial(botao_clicado)
+                    botao_clicado = tela_tutorial()
             elif evento.key == pygame.K_BACKSPACE:
                 # Quando o jogador pressionar Backspace, remover o último caractere do nome
                 player_name = player_name[:-1]
