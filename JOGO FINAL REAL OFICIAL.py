@@ -8,7 +8,7 @@ pygame.mixer.init()
 pygame.init()
 
 
-# ----- Gera tela principal
+# ----- Inicia assets e constantes
 WIDTH = 600
 HEIGHT = 600
 window = pygame.display.set_mode((WIDTH, HEIGHT))
@@ -17,23 +17,15 @@ PRETO = (0, 0, 0)
 VERMELHO = (255,0,0)
 CINZA = (117, 120, 123)
 
-# Carregar o dicionário de jogadores existente do arquivo JSON, se houver
-try:
-    with open("players.json", "r") as file:
-        players = json.load(file)
-except FileNotFoundError:
-    players = {}
-
-player_name = ""
-
-# ----- Inicia assets
 largura_agua_viva = 60
 altura_agua_viva = 60
 largura_player = 80
 altura_player = 80
-larg_tub = 130
+largura_hol = 130
 level = 0
-alt_tub = 90
+altura_hol = 90
+
+player_name = ""
 
 fonte = pygame.font.Font('fonte.ttf', 30)
 
@@ -46,8 +38,8 @@ Tela_tutorial = pygame.transform.scale(Tela_tutorial,(WIDTH,HEIGHT))
 agua_viva = pygame.image.load('imagens/AGUAVIVA.png').convert_alpha()
 agua_viva_small = pygame.transform.scale(agua_viva, (largura_agua_viva, altura_agua_viva))
 
-tubarao = pygame.image.load('imagens/holandes.png').convert_alpha()
-tubarao_grande = pygame.transform.scale(tubarao, (larg_tub, alt_tub))
+holandes = pygame.image.load('imagens/holandes.png').convert_alpha()
+hoandes_grande = pygame.transform.scale(holandes, (largura_hol, altura_hol))
 
 player_image1 = pygame.image.load('imagens/bob_esponja_com_rede.png').convert_alpha()
 player_image1 = pygame.transform.scale(player_image1, (largura_player, altura_player))
@@ -74,11 +66,63 @@ sominicio = pygame.mixer.Sound('sominicio.mp3')
 som_gary = pygame.mixer.Sound('garysom.mp3')
 sominicio.set_volume(0.2)
 bobganha = pygame.mixer.Sound('bobganha.mp3')
+
 # ----- Inicia estruturas de dados
 game = True
 score1 = 0
 score2 = 0
 tempo_gary = 0
+
+# Carregar o dicionário de jogadores existente do arquivo JSON, se houver
+try:
+    with open("players.json", "r") as file:
+        players = json.load(file)
+except FileNotFoundError:
+    players = {}
+    
+
+'''a abstração  inicial foi feita nas três classes abaixo, que compartilhavam 
+as mesmas funções init e update, portanto, julgou-se necessário, visando a melhoria do código
+- em pontos de leitura, manutenção e simplificação - a abstração desta parte.
+'''
+
+class ObjetosMoveis(pygame.sprite.Sprite):
+    def __init__(self, imgagens):
+        # Construtor da classe mãe (Sprite).
+        pygame.sprite.Sprite.__init__(self)
+
+        self.image = imgagens
+        self.rect = pygame.Rect(0, 0, largura_agua_viva, altura_agua_viva)
+        self.rect.x = random.randint(-100,-50)
+        self.rect.bottom = random.randint(0, HEIGHT-100)
+        self.speedx = random.randint(2, 6)
+        self.speedy = 0
+    
+    def update(self):
+        # Atualizando a posição do objeto
+        self.rect.x += self.speedx
+        self.rect.y += self.speedy
+
+        # Se o objeto passar do final da tela, volta para cima e sorteia
+        # novas posições e velocidades
+        if self.rect.top < 0 or self.rect.bottom > HEIGHT or self.rect.left > WIDTH:
+            self.rect.x = -100
+            self.rect.bottom = random.randint(0, HEIGHT-100)
+            self.speedx = random.randint(2, 6)
+            self.speedy = 0
+
+class AGUA_VIVA(pygame.sprite.Sprite):
+    def __init__(self, imgagens):
+        super().__init__(self, imgagens, largura_agua_viva, altura_agua_viva, 2,6 )
+
+class GARY(pygame.sprite.Sprite):
+    def __init__(self, imgagens):
+        super().__init__(self, imgagens, largura_agua_viva, altura_agua_viva, 2,6 )
+
+class HOLANDES(pygame.sprite.Sprite):
+    def __init__(self, imgagens):
+        super().__init__(self, imgagens, largura_hol, altura_hol, 2,6 )
+
 
 class Player(pygame.sprite.Sprite):
     def __init__(self, imagens, keys):
@@ -127,86 +171,6 @@ class Player(pygame.sprite.Sprite):
         if self.rect.top < 0:
             self.rect.top = 0
 
-class AGUA_VIVA(pygame.sprite.Sprite):
-    def __init__(self, imgagens):
-        # Construtor da classe mãe (Sprite).
-        pygame.sprite.Sprite.__init__(self)
-
-        self.image = imgagens
-        self.rect = pygame.Rect(0, 0, largura_agua_viva, altura_agua_viva)
-        self.rect.x = random.randint(-100,-50)
-        self.rect.bottom = random.randint(0, HEIGHT-100)
-        self.speedx = random.randint(2, 6)
-        self.speedy = 0
-
-    def update(self):
-        # Atualizando a posição do peixe
-        self.rect.x += self.speedx
-        self.rect.y += self.speedy
-
-        # Se o peixe passar do final da tela, volta para cima e sorteia
-        # novas posições e velocidades
-        if self.rect.top < 0 or self.rect.bottom > HEIGHT or self.rect.left > WIDTH:
-            self.rect.x = -100
-            self.rect.bottom = random.randint(0, HEIGHT-100)
-            self.speedx = random.randint(2, 6)
-            self.speedy = 0
-
-class GARY(pygame.sprite.Sprite):
-    def __init__(self, imgagens):
-        # Construtor da classe mãe (Sprite).
-        pygame.sprite.Sprite.__init__(self)
-
-        self.image = imgagens
-        self.rect = pygame.Rect(0, 0, largura_agua_viva, altura_agua_viva)
-        self.rect.x = random.randint(-100,-50)
-        self.rect.bottom = random.randint(0, HEIGHT-100)
-        self.speedx = random.randint(2, 6)
-        self.speedy = 0
-
-    def update(self):
-        # Atualizando a posição do peixe
-        self.rect.x += self.speedx
-        self.rect.y += self.speedy
-
-        # Se o caracol passar do final da tela, volta para cima e sorteia
-        # novas posições e velocidades
-        if self.rect.top < 0 or self.rect.bottom > HEIGHT or self.rect.left > WIDTH:
-            self.rect.x = -100
-            self.rect.bottom = random.randint(0, HEIGHT-100)
-            self.speedx = 6
-            self.speedy = 0
-
-class HOLANDES(pygame.sprite.Sprite):
-    def __init__(self, imgagens):
-        # Construtor da classe mãe (Sprite).
-        pygame.sprite.Sprite.__init__(self)
-
-        self.image = imgagens
-        self.rect = pygame.Rect(0, 0, 110, 65)
-        self.rect.x = random.randint(-100,-50)
-        self.rect.bottom = random.randint(0, HEIGHT-100)
-        self.speedx = random.randint(2, 6)
-        self.speedy = 0
-
-    def update(self):
-        # Atualizando a posição do peixe
-        self.rect.x += self.speedx
-        self.rect.y += self.speedy
-
-        # Se o peixe passar do final da tela, volta para cima e sorteia
-        # novas posições e velocidades
-        if self.rect.top < 0 or self.rect.bottom > HEIGHT or self.rect.left > WIDTH:
-            self.rect.x = -100
-            self.rect.bottom = random.randint(0, HEIGHT-100)
-            self.speedy = 0
-            if level == 0:
-                self.speedx = random.randint(2, 3)
-            elif level == 1:
-                self.speedx = random.randint(5, 6)
-            else:
-                self.speedx = random.randint(6, 8)
-
 def tela_tutorial(BOTAOCLICADO):
     BOTAOCLICADO = False
     executando1 = True
@@ -224,12 +188,12 @@ def tela_tutorial(BOTAOCLICADO):
         pygame.display.update()
         
 
-
 # ----- Criação de objetos
 player1 = Player(player_image1, {'up': pygame.K_w, 'down': pygame.K_s, 'left': pygame.K_a, 'right': pygame.K_d})
 player2 = Player(player_image2, {'up': pygame.K_UP, 'down': pygame.K_DOWN, 'left': pygame.K_LEFT, 'right': pygame.K_RIGHT})
 
-all_tubaroes = pygame.sprite.Group()
+
+all_holandeses = pygame.sprite.Group()
 all_aguas_vivas = pygame.sprite.Group()
 all_sprites = pygame.sprite.Group()
 all_gary = pygame.sprite.Group()
@@ -252,13 +216,13 @@ for i in range(6):
 
 if level == 0 or level==1:
     for i in range(2):
-        tubarao = HOLANDES(tubarao_grande)
-        all_tubaroes.add(tubarao)
+        tubarao = HOLANDES(hoandes_grande)
+        all_holandeses.add(holandes)
 
 if level == 2:
     for i in range(3):
-        tubarao = HOLANDES(tubarao_grande)
-        all_tubaroes.add(tubarao)
+        tubarao = HOLANDES(hoandes_grande)
+        all_holandeses.add(holandes)
 
 
 for i in range(1):
@@ -410,7 +374,7 @@ while executando:
                 all_gary.add(gary)
                 tempo_gary = 0  # Reinicia o contador de tempo para a próxima aparição do Gary
 
-            for tubarao in all_tubaroes:
+            for tubarao in all_holandeses:
                 tubarao.update()
             
             for aguaviva in all_aguas_vivas:
@@ -422,7 +386,7 @@ while executando:
             # ----- Gera saídas
             window.fill((0, 0, 0))  # Preenche com a cor preta
             window.blit(background, (0, 0))
-            all_tubaroes.draw(window)
+            all_holandeses.draw(window)
             all_aguas_vivas.draw(window)
             all_gary.draw(window)
             all_sprites.draw(window)
@@ -446,8 +410,8 @@ while executando:
                     executando = False
 
                 elif current_time >= 20 and i ==1:
-                    tubarao = HOLANDES(tubarao_grande)
-                    all_tubaroes.add(tubarao)
+                    tubarao = HOLANDES(hoandes_grande)
+                    all_holandeses.add(tubarao)
                     i+=1
 
             pygame.display.update()
@@ -515,7 +479,8 @@ while tela_final:
         if evento.type == pygame.QUIT:
             tela_final = False
 
-        
+    '''possível abstração nesses tres ultimos???''' 
+
     if score1>score2:
         window.fill((0, 0, 0))  # Preenche com a cor preta
         bob_text = fonte.render(f"{nome_jogador1} venceu! ", True, (PRETO))
